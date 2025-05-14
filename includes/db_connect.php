@@ -16,7 +16,7 @@ function connect_db() {
     } catch (PDOException $e) {
         // Log the error and display a friendly message
         error_log("Database Connection Error: " . $e->getMessage());
-        die("Database connection failed. Please contact the administrator.", $e->getMessage());
+        die("Database connection failed. Please contact the administrator.");
     }
 }
 

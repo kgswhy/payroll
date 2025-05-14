@@ -1,5 +1,8 @@
 <?php
-session_start();
+// Only start session if none is active
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 require_once '../includes/config.php';
 require_once '../includes/db_connect.php';
 require_once '../includes/functions.php';
@@ -26,15 +29,14 @@ if(is_logged_in()) {
 if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
     $email = sanitize_input($_POST['email']);
     $password = $_POST['password'];
-    $role = sanitize_input($_POST['role']);
     
     // Validate inputs
-    if(empty($email) || empty($password) || empty($role)) {
+    if(empty($email) || empty($password)) {
         set_alert('danger', 'All fields are required');
     } else {
         // Get user data
-        $stmt = $conn->prepare("SELECT * FROM users WHERE email = ? AND role = ?");
-        $stmt->execute([$email, $role]);
+        $stmt = $conn->prepare("SELECT * FROM users WHERE email = ?");
+        $stmt->execute([$email]);
         $user = $stmt->fetch();
         
         if($user && password_verify($password, $user['password'])) {
@@ -45,7 +47,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
             $_SESSION['user_role'] = $user['role'];
             
             // Redirect based on role
-            switch($role) {
+            switch($user['role']) {
                 case 'admin':
                     redirect(BASE_URL . '/admin/index.php');
                     break;
@@ -59,7 +61,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
                     redirect(BASE_URL . '/index.php');
             }
         } else {
-            set_alert('danger', 'Invalid email, password, or role');
+            set_alert('danger', 'Invalid email or password');
         }
     }
 }
@@ -89,15 +91,8 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
                 <label for="password">Password:</label>
                 <input type="password" name="password" id="password" required>
             </div>
-            <div class="form-group">
-                <label for="role">Role:</label>
-                <select name="role" id="role" required>
-                    <option value="admin">Admin</option>
-                    <option value="employee">Employee</option>
-                    <option value="manager">Manager</option>
-                </select>
-            </div>
             <button type="submit" name="login">Login</button>
+            <p class="signup-link">Don't have an account? <a href="<?php echo BASE_URL; ?>/auth/signup.php">Sign Up</a></p>
         </form>
     </div>
     

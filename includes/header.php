@@ -1,5 +1,8 @@
 <?php
-session_start();
+// Only start session if none is active
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 require_once 'functions.php';
 
 // Check if user is logged in (except for login page)

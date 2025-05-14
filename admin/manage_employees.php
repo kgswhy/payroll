@@ -91,6 +91,7 @@ $stmt = $conn->query("
     SELECT u.*, m.name as manager_name 
     FROM users u 
     LEFT JOIN users m ON u.manager_id = m.id 
+    WHERE u.role != 'admin'
     ORDER BY u.name
 ");
 $employees = $stmt->fetchAll();
@@ -126,7 +127,6 @@ $managers = $stmt->fetchAll();
             <div class="form-group">
                 <label for="role">Role:</label>
                 <select name="role" id="role" required>
-                    <option value="admin">Admin</option>
                     <option value="employee" selected>Employee</option>
                     <option value="manager">Manager</option>
                 </select>
@@ -177,7 +177,6 @@ $managers = $stmt->fetchAll();
             <div class="form-group">
                 <label for="edit_role">Role:</label>
                 <select name="role" id="edit_role" required>
-                    <option value="admin">Admin</option>
                     <option value="employee">Employee</option>
                     <option value="manager">Manager</option>
                 </select>
