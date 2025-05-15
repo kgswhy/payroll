@@ -19,4 +19,4 @@ define('SESSION_TIMEOUT', 1800); // 30 minutes
 // Error reporting
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
-?> 
+?>

@@ -7,7 +7,8 @@ require_once 'db_connect.php';
  * @param string $data Data to be sanitized
  * @return string Sanitized data
  */
-function sanitize_input($data) {
+function sanitize_input($data)
+{
     $data = trim($data);
     $data = stripslashes($data);
     $data = htmlspecialchars($data);
@@ -19,7 +20,8 @@ function sanitize_input($data) {
  * 
  * @return bool True if user is logged in, false otherwise
  */
-function is_logged_in() {
+function is_logged_in()
+{
     return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
 }
 
@@ -29,7 +31,8 @@ function is_logged_in() {
  * @param string $url URL to redirect to
  * @return void
  */
-function redirect($url) {
+function redirect($url)
+{
     header("Location: $url");
     exit();
 }
@@ -40,7 +43,8 @@ function redirect($url) {
  * @param int $user_id User ID
  * @return array|bool User data as array or false if not found
  */
-function get_user_by_id($user_id) {
+function get_user_by_id($user_id)
+{
     global $conn;
     $stmt = $conn->prepare("SELECT * FROM users WHERE id = ?");
     $stmt->execute([$user_id]);
@@ -53,7 +57,8 @@ function get_user_by_id($user_id) {
  * @param string $email User email
  * @return array|bool User data as array or false if not found
  */
-function get_user_by_email($email) {
+function get_user_by_email($email)
+{
     global $conn;
     $stmt = $conn->prepare("SELECT * FROM users WHERE email = ?");
     $stmt->execute([$email]);
@@ -66,7 +71,8 @@ function get_user_by_email($email) {
  * @param string $role User role
  * @return array Array of users with the specified role
  */
-function get_users_by_role($role) {
+function get_users_by_role($role)
+{
     global $conn;
     $stmt = $conn->prepare("SELECT * FROM users WHERE role = ?");
     $stmt->execute([$role]);
@@ -79,7 +85,8 @@ function get_users_by_role($role) {
  * @param int $manager_id Manager ID
  * @return array Array of employees
  */
-function get_employees_by_manager($manager_id) {
+function get_employees_by_manager($manager_id)
+{
     global $conn;
     $stmt = $conn->prepare("SELECT * FROM users WHERE manager_id = ? AND role = 'employee'");
     $stmt->execute([$manager_id]);
@@ -93,17 +100,18 @@ function get_employees_by_manager($manager_id) {
  * @param string|null $status Filter by status (optional)
  * @return array Array of work hours
  */
-function get_work_hours($employee_id, $status = null) {
+function get_work_hours($employee_id, $status = null)
+{
     global $conn;
-    
-    if($status) {
+
+    if ($status) {
         $stmt = $conn->prepare("SELECT * FROM work_hours WHERE employee_id = ? AND status = ? ORDER BY date DESC");
         $stmt->execute([$employee_id, $status]);
     } else {
         $stmt = $conn->prepare("SELECT * FROM work_hours WHERE employee_id = ? ORDER BY date DESC");
         $stmt->execute([$employee_id]);
     }
-    
+
     return $stmt->fetchAll();
 }
 
@@ -113,10 +121,11 @@ function get_work_hours($employee_id, $status = null) {
  * @param int|null $manager_id Manager ID to filter by (optional)
  * @return array Array of pending work hours
  */
-function get_pending_work_hours($manager_id = null) {
+function get_pending_work_hours($manager_id = null)
+{
     global $conn;
-    
-    if($manager_id) {
+
+    if ($manager_id) {
         $stmt = $conn->prepare("
             SELECT wh.*, u.name as employee_name 
             FROM work_hours wh 
@@ -135,7 +144,7 @@ function get_pending_work_hours($manager_id = null) {
         ");
         $stmt->execute();
     }
-    
+
     return $stmt->fetchAll();
 }
 
@@ -146,18 +155,19 @@ function get_pending_work_hours($manager_id = null) {
  * @param string $time_out Time out (format: HH:MM:SS)
  * @return float Hours worked
  */
-function calculate_hours($time_in, $time_out) {
+function calculate_hours($time_in, $time_out)
+{
     $in = strtotime($time_in);
     $out = strtotime($time_out);
-    
+
     // Handle overnight shifts
-    if($out < $in) {
+    if ($out < $in) {
         $out += 86400; // Add 24 hours (in seconds)
     }
-    
+
     $diff_seconds = $out - $in;
     $hours = $diff_seconds / 3600; // Convert to hours
-    
+
     return round($hours, 2);
 }
 
@@ -168,7 +178,8 @@ function calculate_hours($time_in, $time_out) {
  * @param string $message Alert message
  * @return void
  */
-function set_alert($type, $message) {
+function set_alert($type, $message)
+{
     $_SESSION['alert_type'] = $type;
     $_SESSION['alert_message'] = $message;
 }
@@ -178,20 +189,21 @@ function set_alert($type, $message) {
  * 
  * @return string HTML for alert message
  */
-function display_alert() {
+function display_alert()
+{
     $html = '';
-    
-    if(isset($_SESSION['alert_type']) && isset($_SESSION['alert_message'])) {
+
+    if (isset($_SESSION['alert_type']) && isset($_SESSION['alert_message'])) {
         $type = $_SESSION['alert_type'];
         $message = $_SESSION['alert_message'];
-        
+
         $html = "<div class=\"alert-{$type}\">{$message}</div>";
-        
+
         // Clear the alert
         unset($_SESSION['alert_type']);
         unset($_SESSION['alert_message']);
     }
-    
+
     return $html;
 }
 
@@ -201,7 +213,8 @@ function display_alert() {
  * @param int $employee_id Employee ID
  * @return array Array of payroll data
  */
-function get_employee_payroll($employee_id) {
+function get_employee_payroll($employee_id)
+{
     global $conn;
     $stmt = $conn->prepare("SELECT * FROM payroll WHERE employee_id = ? ORDER BY year DESC, month DESC");
     $stmt->execute([$employee_id]);
@@ -209,13 +222,17 @@ function get_employee_payroll($employee_id) {
 }
 
 /**
- * Format money value
+ * Format money value to Rupiah
  * 
- * @param float $amount Amount to format
- * @return string Formatted amount
+ * @param float|null $amount Amount to format
+ * @return string Formatted amount in Rupiah
  */
-function format_money($amount) {
-    return '$' . number_format($amount, 2, '.', ',');
+function format_money($amount)
+{
+    if ($amount === null) {
+        $amount = 0;
+    }
+    return 'Rp ' . number_format($amount, 0, ',', '.'); // Indonesian format: Rp 1.234.567
 }
 
 /**
@@ -224,7 +241,8 @@ function format_money($amount) {
  * @param string $date Date to format (YYYY-MM-DD)
  * @return string Formatted date
  */
-function format_date($date) {
+function format_date($date)
+{
     return date('F j, Y', strtotime($date));
 }
 
@@ -234,7 +252,8 @@ function format_date($date) {
  * @param int $month_number Month number (1-12)
  * @return string Month name
  */
-function get_month_name($month_number) {
+function get_month_name($month_number)
+{
     $dateObj = DateTime::createFromFormat('!m', $month_number);
     return $dateObj->format('F');
 }
@@ -245,7 +264,8 @@ function get_month_name($month_number) {
  * @param string $role Role to check
  * @return bool True if user has the role, false otherwise
  */
-function has_role($role) {
+function has_role($role)
+{
     return isset($_SESSION['user_role']) && $_SESSION['user_role'] === $role;
 }
-?> 
+?>

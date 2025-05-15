@@ -1,12 +1,77 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Toggle sidebar on mobile
+    // Sidebar Toggle
     const sidebarToggle = document.querySelector('.sidebar-toggle');
-    if(sidebarToggle) {
+    const sidebar = document.querySelector('.sidebar');
+    const mainContent = document.querySelector('.main-content');
+
+    if (sidebarToggle && sidebar) {
         sidebarToggle.addEventListener('click', function() {
-            document.querySelector('.sidebar').classList.toggle('active');
+            sidebar.classList.toggle('active');
+            if (mainContent) {
+                mainContent.classList.toggle('sidebar-hidden');
+            }
         });
     }
-    
+
+    // Ripple effect for buttons
+    const buttons = document.querySelectorAll('button, .btn');
+    buttons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            const rect = button.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const ripple = document.createElement('span');
+            ripple.classList.add('ripple');
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+
+            button.appendChild(ripple);
+
+            setTimeout(() => {
+                ripple.remove();
+            }, 1000);
+        });
+    });
+
+    // Form input animation
+    const formInputs = document.querySelectorAll('.form-group input, .form-group textarea');
+    formInputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            this.parentElement.classList.add('focused');
+        });
+
+        input.addEventListener('blur', function() {
+            if (!this.value) {
+                this.parentElement.classList.remove('focused');
+            }
+        });
+
+        // Check on load if input has value
+        if (input.value) {
+            input.parentElement.classList.add('focused');
+        }
+    });
+
+    // Table row hover effect
+    const tableRows = document.querySelectorAll('.data-table tr');
+    tableRows.forEach(row => {
+        row.addEventListener('mouseover', function() {
+            this.style.transition = 'background-color 0.2s ease';
+        });
+    });
+
+    // Alert auto-dismiss
+    const alerts = document.querySelectorAll('.alert-success, .alert-danger, .alert-warning');
+    alerts.forEach(alert => {
+        setTimeout(() => {
+            alert.style.opacity = '0';
+            setTimeout(() => {
+                alert.remove();
+            }, 300);
+        }, 5000);
+    });
+
     // Form validation
     const forms = document.querySelectorAll('form');
     forms.forEach(form => {
@@ -83,7 +148,17 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Salary calculator
+    // Salary calculator with Rupiah format
+    const formatRupiah = (number) => {
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(number);
+    };
+
+    // Update existing salary calculator
     const baseSalaryInput = document.querySelector('input[name="base_salary"]');
     const allowanceInput = document.querySelector('input[name="allowance"]');
     const deductionsInput = document.querySelector('input[name="deductions"]');
@@ -91,13 +166,29 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if(baseSalaryInput && allowanceInput && deductionsInput && netSalaryDisplay) {
         const calculateNetSalary = function() {
-            const baseSalary = parseFloat(baseSalaryInput.value) || 0;
-            const allowance = parseFloat(allowanceInput.value) || 0;
-            const deductions = parseFloat(deductionsInput.value) || 0;
+            const baseSalary = parseFloat(baseSalaryInput.value.replace(/[^\d]/g, '')) || 0;
+            const allowance = parseFloat(allowanceInput.value.replace(/[^\d]/g, '')) || 0;
+            const deductions = parseFloat(deductionsInput.value.replace(/[^\d]/g, '')) || 0;
             
             const netSalary = baseSalary + allowance - deductions;
-            netSalaryDisplay.textContent = netSalary.toFixed(2);
+            netSalaryDisplay.textContent = formatRupiah(netSalary);
         };
+        
+        // Format input values on blur
+        const formatInputOnBlur = (input) => {
+            input.addEventListener('blur', function() {
+                const value = parseFloat(this.value.replace(/[^\d]/g, '')) || 0;
+                this.value = formatRupiah(value);
+            });
+            
+            input.addEventListener('focus', function() {
+                this.value = this.value.replace(/[^\d]/g, '');
+            });
+        };
+        
+        formatInputOnBlur(baseSalaryInput);
+        formatInputOnBlur(allowanceInput);
+        formatInputOnBlur(deductionsInput);
         
         baseSalaryInput.addEventListener('input', calculateNetSalary);
         allowanceInput.addEventListener('input', calculateNetSalary);

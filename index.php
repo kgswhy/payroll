@@ -4,10 +4,10 @@ require_once 'includes/config.php';
 require_once 'includes/functions.php';
 
 // Redirect to appropriate dashboard based on role
-if(is_logged_in()) {
+if (is_logged_in()) {
     $role = $_SESSION['user_role'];
-    
-    switch($role) {
+
+    switch ($role) {
         case 'admin':
             redirect(BASE_URL . '/admin/index.php');
             break;
@@ -26,4 +26,4 @@ if(is_logged_in()) {
 
 // Otherwise redirect to login page
 redirect(BASE_URL . '/auth/login.php');
-?> 
+?>
