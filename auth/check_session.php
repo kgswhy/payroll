@@ -1,5 +1,8 @@
 <?php
-session_start();
+// Only start session if none is active
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
 
@@ -18,7 +21,9 @@ if (isset($_SESSION['last_activity'])) {
         session_destroy();
 
         // Redirect to login with message
-        session_start();
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
         set_alert('danger', 'Your session has expired. Please log in again.');
         redirect(BASE_URL . '/auth/login.php');
     }

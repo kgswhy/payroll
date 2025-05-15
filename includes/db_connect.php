@@ -18,6 +18,7 @@ function connect_db()
         // Log the error and display a friendly message
         error_log("Database Connection Error: " . $e->getMessage());
         die("Database connection failed. Please contact the administrator. Error: " . $e->getMessage());
+        die("Database connection failed. Please contact the administrator.");
     }
 }
 
