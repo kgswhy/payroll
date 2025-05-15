@@ -113,213 +113,318 @@ $stmt = $conn->query("SELECT id, name FROM users WHERE role = 'employee' ORDER B
 $employees = $stmt->fetchAll();
 ?>
 
-<div class="container">
-    <h2>Verify Work Hours</h2>
-    
-    <div class="filter-form">
-        <h3>Filter</h3>
-        <form method="post" action="">
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="employee_id">Employee:</label>
-                    <select name="employee_id" id="employee_id">
-                        <option value="">All Employees</option>
-                        <?php foreach($employees as $e): ?>
-                        <option value="<?php echo $e['id']; ?>" <?php 
-                            echo (isset($_SESSION['wh_filter']['employee_id']) && $_SESSION['wh_filter']['employee_id'] == $e['id']) ? 'selected' : ''; 
-                        ?>><?php echo $e['name']; ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="status">Status:</label>
-                    <select name="status" id="status">
-                        <option value="">All Statuses</option>
-                        <option value="pending" <?php echo (isset($_SESSION['wh_filter']['status']) && $_SESSION['wh_filter']['status'] == 'pending') ? 'selected' : ''; ?>>Pending</option>
-                        <option value="approved" <?php echo (isset($_SESSION['wh_filter']['status']) && $_SESSION['wh_filter']['status'] == 'approved') ? 'selected' : ''; ?>>Approved</option>
-                        <option value="corrected" <?php echo (isset($_SESSION['wh_filter']['status']) && $_SESSION['wh_filter']['status'] == 'corrected') ? 'selected' : ''; ?>>Corrected</option>
-                        <option value="rejected" <?php echo (isset($_SESSION['wh_filter']['status']) && $_SESSION['wh_filter']['status'] == 'rejected') ? 'selected' : ''; ?>>Rejected</option>
-                    </select>
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="date_from">Date From:</label>
-                    <input type="date" name="date_from" id="date_from" value="<?php echo isset($_SESSION['wh_filter']['date_from']) ? $_SESSION['wh_filter']['date_from'] : ''; ?>">
-                </div>
-                <div class="form-group">
-                    <label for="date_to">Date To:</label>
-                    <input type="date" name="date_to" id="date_to" value="<?php echo isset($_SESSION['wh_filter']['date_to']) ? $_SESSION['wh_filter']['date_to'] : ''; ?>">
-                </div>
-            </div>
-            <div class="form-buttons">
-                <button type="submit" name="filter_workhours">Apply Filter</button>
-                <button type="submit" name="clear_filter">Clear Filter</button>
-            </div>
-        </form>
+<!-- Include admin CSS -->
+<link rel="stylesheet" href="../assets/css/admin.css">
+
+<div class="admin-container">
+    <div class="page-header">
+        <h2><i class="fas fa-clipboard-check"></i> Verifikasi Jam Kerja</h2>
     </div>
     
-    <div class="work-hours-list">
-        <h3>Work Hours (<?php echo $total_records; ?> entries)</h3>
-        <?php if(count($work_hours) > 0): ?>
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Employee</th>
-                        <th>Date</th>
-                        <th>Time In</th>
-                        <th>Time Out</th>
-                        <th>Hours</th>
-                        <th>Status</th>
-                        <th>Manager</th>
-                        <th>Notes</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach($work_hours as $wh): ?>
-                    <tr>
-                        <td><?php echo $wh['id']; ?></td>
-                        <td><?php echo $wh['employee_name']; ?></td>
-                        <td><?php echo format_date($wh['date']); ?></td>
-                        <td><?php echo date('h:i A', strtotime($wh['time_in'])); ?></td>
-                        <td><?php echo date('h:i A', strtotime($wh['time_out'])); ?></td>
-                        <td><?php echo calculate_hours($wh['time_in'], $wh['time_out']); ?> hrs</td>
-                        <td>
-                            <?php 
-                                switch($wh['status']) {
-                                    case 'approved': echo '<span class="text-success">Approved</span>'; break;
-                                    case 'rejected': echo '<span class="text-danger">Rejected</span>'; break;
-                                    case 'corrected': echo '<span class="text-warning">Corrected</span>'; break;
-                                    default: echo '<span class="text-muted">Pending</span>';
-                                }
-                            ?>
-                        </td>
-                        <td><?php echo $wh['manager_name']; ?></td>
-                        <td><?php echo $wh['notes']; ?></td>
-                        <td>
-                            <button type="button" onclick="showStatusForm(<?php echo $wh['id']; ?>, '<?php echo $wh['status']; ?>')">Change Status</button>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-            
-            <!-- Pagination -->
-            <?php if($total_pages > 1): ?>
-            <div class="pagination">
-                <?php if($page > 1): ?>
-                    <a href="?page=<?php echo $page - 1; ?>" class="page-link">&laquo; Previous</a>
-                <?php endif; ?>
-                
-                <?php for($i = 1; $i <= $total_pages; $i++): ?>
-                    <?php if($i == $page): ?>
-                        <span class="page-link active"><?php echo $i; ?></span>
-                    <?php else: ?>
-                        <a href="?page=<?php echo $i; ?>" class="page-link"><?php echo $i; ?></a>
-                    <?php endif; ?>
-                <?php endfor; ?>
-                
-                <?php if($page < $total_pages): ?>
-                    <a href="?page=<?php echo $page + 1; ?>" class="page-link">Next &raquo;</a>
-                <?php endif; ?>
-            </div>
-            <?php endif; ?>
-            
-            <!-- Status Change Form (Hidden by default) -->
-            <div id="status-form" style="display: none;" class="modal-form">
-                <h3>Change Status</h3>
-                <form method="post" action="">
-                    <input type="hidden" name="id" id="work_hour_id">
+    <?php echo display_alert(); ?>
+    
+    <div class="admin-card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3><i class="fas fa-filter"></i> Filter</h3>
+            <button type="button" class="admin-btn" id="filter-toggle" onclick="toggleFilterPanel()">
+                <i class="fas fa-chevron-down" id="filter-toggle-icon"></i>
+            </button>
+        </div>
+        <div class="card-body" id="filter-panel">
+            <form method="post" action="" class="admin-form">
+                <div class="d-flex" style="gap: 20px; flex-wrap: wrap;">
                     <div class="form-group">
-                        <label for="status_change">Status:</label>
-                        <select name="status" id="status_change" required>
-                            <option value="pending">Pending</option>
-                            <option value="approved">Approved</option>
-                            <option value="corrected">Corrected</option>
-                            <option value="rejected">Rejected</option>
+                        <label for="employee_id" class="form-label">Karyawan:</label>
+                        <select name="employee_id" id="employee_id" class="form-input">
+                            <option value="">Semua Karyawan</option>
+                            <?php foreach($employees as $e): ?>
+                            <option value="<?php echo $e['id']; ?>" <?php 
+                                echo (isset($_SESSION['wh_filter']['employee_id']) && $_SESSION['wh_filter']['employee_id'] == $e['id']) ? 'selected' : ''; 
+                            ?>><?php echo $e['name']; ?></option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="status_notes">Notes:</label>
-                        <textarea name="notes" id="status_notes" rows="3" required></textarea>
+                        <label for="status" class="form-label">Status:</label>
+                        <select name="status" id="status" class="form-input">
+                            <option value="">Semua Status</option>
+                            <option value="pending" <?php echo (isset($_SESSION['wh_filter']['status']) && $_SESSION['wh_filter']['status'] == 'pending') ? 'selected' : ''; ?>>Pending</option>
+                            <option value="approved" <?php echo (isset($_SESSION['wh_filter']['status']) && $_SESSION['wh_filter']['status'] == 'approved') ? 'selected' : ''; ?>>Approved</option>
+                            <option value="corrected" <?php echo (isset($_SESSION['wh_filter']['status']) && $_SESSION['wh_filter']['status'] == 'corrected') ? 'selected' : ''; ?>>Corrected</option>
+                            <option value="rejected" <?php echo (isset($_SESSION['wh_filter']['status']) && $_SESSION['wh_filter']['status'] == 'rejected') ? 'selected' : ''; ?>>Rejected</option>
+                        </select>
                     </div>
-                    <button type="submit" name="change_status">Save Changes</button>
-                    <button type="button" onclick="hideStatusForm()">Cancel</button>
-                </form>
+                    <div class="form-group">
+                        <label for="date_from" class="form-label">Tanggal Mulai:</label>
+                        <input type="date" name="date_from" id="date_from" class="form-input" value="<?php echo isset($_SESSION['wh_filter']['date_from']) ? $_SESSION['wh_filter']['date_from'] : ''; ?>">
+                    </div>
+                    <div class="form-group">
+                        <label for="date_to" class="form-label">Tanggal Selesai:</label>
+                        <input type="date" name="date_to" id="date_to" class="form-input" value="<?php echo isset($_SESSION['wh_filter']['date_to']) ? $_SESSION['wh_filter']['date_to'] : ''; ?>">
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" name="filter_workhours" class="admin-btn admin-btn-primary">
+                        <i class="fas fa-search"></i> Terapkan Filter
+                    </button>
+                    <button type="submit" name="clear_filter" class="admin-btn">
+                        <i class="fas fa-undo"></i> Reset Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="admin-card mt-4">
+        <div class="card-header">
+            <h3><i class="fas fa-clock"></i> Jam Kerja <span class="count-badge"><?php echo $total_records; ?> entri</span></h3>
+        </div>
+        <div class="card-body">
+            <?php if(count($work_hours) > 0): ?>
+                <div class="table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Karyawan</th>
+                                <th>Tanggal</th>
+                                <th>Jam Masuk</th>
+                                <th>Jam Keluar</th>
+                                <th>Jam</th>
+                                <th>Status</th>
+                                <th>Manager</th>
+                                <th>Catatan</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach($work_hours as $wh): ?>
+                            <tr>
+                                <td><?php echo $wh['id']; ?></td>
+                                <td><?php echo htmlspecialchars($wh['employee_name']); ?></td>
+                                <td><?php echo format_date($wh['date']); ?></td>
+                                <td><?php echo date('H:i', strtotime($wh['time_in'])); ?></td>
+                                <td><?php echo date('H:i', strtotime($wh['time_out'])); ?></td>
+                                <td><?php echo calculate_hours($wh['time_in'], $wh['time_out']); ?> jam</td>
+                                <td>
+                                    <span class="status-badge <?php echo $wh['status']; ?>">
+                                        <?php echo ucfirst($wh['status']); ?>
+                                    </span>
+                                </td>
+                                <td><?php echo htmlspecialchars($wh['manager_name'] ?? '-'); ?></td>
+                                <td><?php echo nl2br(htmlspecialchars($wh['notes'] ?? '-')); ?></td>
+                                <td>
+                                    <button class="admin-btn admin-btn-sm admin-btn-primary" onclick="openEditModal('<?php echo $wh['id']; ?>')">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                <?php if($total_pages > 1): ?>
+                <div class="pagination mt-3">
+                    <?php if($page > 1): ?>
+                        <a href="?page=<?php echo $page-1; ?>" class="pagination-item">
+                            <i class="fas fa-chevron-left"></i> Prev
+                        </a>
+                    <?php endif; ?>
+                    
+                    <?php
+                    $start_page = max(1, $page - 2);
+                    $end_page = min($total_pages, $page + 2);
+                    
+                    if($start_page > 1): ?>
+                        <a href="?page=1" class="pagination-item">1</a>
+                        <?php if($start_page > 2): ?>
+                            <span class="pagination-ellipsis">...</span>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                    
+                    <?php for($i = $start_page; $i <= $end_page; $i++): ?>
+                        <a href="?page=<?php echo $i; ?>" class="pagination-item <?php echo ($i == $page) ? 'active' : ''; ?>">
+                            <?php echo $i; ?>
+                        </a>
+                    <?php endfor; ?>
+                    
+                    <?php if($end_page < $total_pages): ?>
+                        <?php if($end_page < $total_pages - 1): ?>
+                            <span class="pagination-ellipsis">...</span>
+                        <?php endif; ?>
+                        <a href="?page=<?php echo $total_pages; ?>" class="pagination-item"><?php echo $total_pages; ?></a>
+                    <?php endif; ?>
+                    
+                    <?php if($page < $total_pages): ?>
+                        <a href="?page=<?php echo $page+1; ?>" class="pagination-item">
+                            Next <i class="fas fa-chevron-right"></i>
+                        </a>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
+                
+            <?php else: ?>
+                <div class="no-data">
+                    <i class="fas fa-inbox"></i>
+                    <p>No work hours found with the current filters.</p>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for editing work hours -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeModal()">&times;</span>
+        <h2>Edit Work Hour Status</h2>
+        <form id="editForm" method="post" action="" class="admin-form">
+            <input type="hidden" name="id" id="edit_id">
+            
+            <div class="form-group">
+                <label for="edit_status" class="form-label">Status:</label>
+                <select name="status" id="edit_status" class="form-input" required>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="corrected">Corrected</option>
+                    <option value="rejected">Rejected</option>
+                </select>
             </div>
-        <?php else: ?>
-            <p>No work hours records found.</p>
-        <?php endif; ?>
+            
+            <div class="form-group">
+                <label for="edit_notes" class="form-label">Notes:</label>
+                <textarea name="notes" id="edit_notes" class="form-input" rows="3"></textarea>
+                <div class="form-note">Add notes about why you're changing the status.</div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" name="change_status" class="admin-btn admin-btn-primary">Update</button>
+                <button type="button" class="admin-btn" onclick="closeModal()">Cancel</button>
+            </div>
+        </form>
     </div>
 </div>
 
 <style>
-.form-row {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 15px;
+/* Additional styles for elements not in admin.css */
+.count-badge {
+    font-size: 0.85rem;
+    background-color: var(--bg-light);
+    padding: 3px 8px;
+    border-radius: 12px;
+    margin-left: 10px;
+    color: var(--text-color);
 }
 
-.form-row .form-group {
-    flex: 1;
+/* Modal styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    overflow: auto;
 }
 
-.form-buttons {
-    margin-top: 15px;
+.modal-content {
+    background-color: white;
+    margin: 10% auto;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    width: 90%;
+    max-width: 500px;
+    position: relative;
 }
 
+.modal-close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 24px;
+    cursor: pointer;
+    color: #888;
+}
+
+.modal-close:hover {
+    color: #000;
+}
+
+/* Pagination styles */
 .pagination {
-    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.pagination-item {
+    display: inline-block;
+    padding: 6px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    text-decoration: none;
+    color: var(--text-color);
+    background-color: white;
+    min-width: 34px;
     text-align: center;
 }
 
-.page-link {
-    display: inline-block;
-    padding: 5px 10px;
-    margin: 0 3px;
-    border: 1px solid #ddd;
-    border-radius: 3px;
-    text-decoration: none;
-    color: #333;
+.pagination-item:hover {
+    background-color: var(--bg-light);
 }
 
-.page-link.active {
-    background-color: #3498db;
+.pagination-item.active {
+    background-color: var(--primary-color);
     color: white;
-    border-color: #3498db;
+    border-color: var(--primary-color);
 }
 
-.modal-form {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: white;
-    padding: 20px;
-    border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.3);
-    z-index: 1000;
-    width: 80%;
-    max-width: 500px;
+.pagination-ellipsis {
+    padding: 6px 12px;
+    color: var(--text-color);
 }
-
-.text-success { color: #4CAF50; }
-.text-danger { color: #e74c3c; }
-.text-warning { color: #f39c12; }
-.text-muted { color: #7f8c8d; }
 </style>
 
 <script>
-function showStatusForm(id, currentStatus) {
-    document.getElementById('work_hour_id').value = id;
-    document.getElementById('status_change').value = currentStatus;
-    document.getElementById('status-form').style.display = 'block';
+// Toggle filter panel
+function toggleFilterPanel() {
+    const panel = document.getElementById('filter-panel');
+    const icon = document.getElementById('filter-toggle-icon');
+    
+    if (panel.style.display === 'none') {
+        panel.style.display = 'block';
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+    } else {
+        panel.style.display = 'none';
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+    }
 }
 
-function hideStatusForm() {
-    document.getElementById('status-form').style.display = 'none';
+// Modal functions
+function openEditModal(id) {
+    document.getElementById('edit_id').value = id;
+    document.getElementById('editModal').style.display = 'block';
+}
+
+function closeModal() {
+    document.getElementById('editModal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('editModal');
+    if (event.target == modal) {
+        closeModal();
+    }
 }
 </script>
 

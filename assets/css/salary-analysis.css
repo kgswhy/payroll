@@ -1,0 +1,182 @@
+.main-content {
+    margin-left: 250px;
+    min-height: 100vh;
+    background: #f5f7fa;
+}
+
+.analysis-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+.analysis-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.analysis-header h2 {
+    font-weight: 500;
+    color: #333;
+    margin: 0;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.stat-card {
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.stat-icon.employees {
+    background-color: rgba(79, 134, 247, 0.1);
+    color: #4f86f7;
+}
+
+.stat-icon.salary {
+    background-color: rgba(79, 201, 95, 0.1);
+    color: #4fc95f;
+}
+
+.stat-icon.hours {
+    background-color: rgba(247, 161, 79, 0.1);
+    color: #f7a14f;
+}
+
+.stat-icon.total-hours {
+    background-color: rgba(156, 39, 176, 0.1);
+    color: #9c27b0;
+}
+
+.stat-info h3 {
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    margin: 0 0 4px 0;
+}
+
+.stat-info p {
+    font-size: 24px;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+
+.employee-table {
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+.table-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.table-header h3 {
+    margin: 0;
+    font-weight: 500;
+    font-size: 18px;
+    color: #333;
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 16px 24px;
+    text-align: left;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+th {
+    font-weight: 500;
+    color: #666;
+    background-color: #f8f9fa;
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+.efficiency-score {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.efficiency-score.high {
+    background-color: rgba(79, 201, 95, 0.1);
+    color: #4fc95f;
+}
+
+.efficiency-score.medium {
+    background-color: rgba(247, 161, 79, 0.1);
+    color: #f7a14f;
+}
+
+.efficiency-score.low {
+    background-color: rgba(239, 83, 80, 0.1);
+    color: #ef5350;
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        margin-left: 60px;
+    }
+    
+    .analysis-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .table-container {
+        margin: 0 -24px;
+    }
+    
+    table {
+        min-width: 800px;
+    }
+} 

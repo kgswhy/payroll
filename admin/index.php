@@ -18,8 +18,11 @@ $stmt = $conn->query("
 $recent_activities = $stmt->fetchAll();
 ?>
 
-<div class="dashboard-container">
-    <div class="dashboard-header">
+<!-- Include admin CSS -->
+<link rel="stylesheet" href="../assets/css/admin.css">
+
+<div class="admin-container">
+    <div class="page-header">
         <h2>Dashboard Admin</h2>
         <div class="date-display">
             <i class="fas fa-calendar-alt"></i> <?php echo date('l, d F Y'); ?>
@@ -61,92 +64,74 @@ $recent_activities = $stmt->fetchAll();
         </div>
     </div>
     
-    <div class="dashboard-section">
-        <div class="section-header">
+    <div class="admin-card">
+        <div class="card-header">
             <h3><i class="fas fa-history"></i> Aktivitas Terbaru</h3>
         </div>
         
-        <?php if(count($recent_activities) > 0): ?>
-            <div class="activity-timeline">
-                <?php foreach($recent_activities as $activity): ?>
-                    <div class="timeline-item">
-                        <div class="timeline-icon <?php echo strtolower($activity['status']); ?>">
-                            <?php if($activity['status'] == 'pending'): ?>
-                                <i class="fas fa-hourglass-half"></i>
-                            <?php elseif($activity['status'] == 'approved'): ?>
-                                <i class="fas fa-check"></i>
-                            <?php elseif($activity['status'] == 'rejected'): ?>
-                                <i class="fas fa-times"></i>
-                            <?php else: ?>
-                                <i class="fas fa-edit"></i>
-                            <?php endif; ?>
+        <div class="card-body">
+            <?php if(count($recent_activities) > 0): ?>
+                <div class="activity-timeline">
+                    <?php foreach($recent_activities as $activity): ?>
+                        <div class="timeline-item">
+                            <div class="timeline-icon <?php echo strtolower($activity['status']); ?>">
+                                <?php if($activity['status'] == 'pending'): ?>
+                                    <i class="fas fa-hourglass-half"></i>
+                                <?php elseif($activity['status'] == 'approved'): ?>
+                                    <i class="fas fa-check"></i>
+                                <?php elseif($activity['status'] == 'rejected'): ?>
+                                    <i class="fas fa-times"></i>
+                                <?php else: ?>
+                                    <i class="fas fa-edit"></i>
+                                <?php endif; ?>
+                            </div>
+                            <div class="timeline-content">
+                                <h4><?php echo $activity['user_name']; ?></h4>
+                                <p><?php echo $activity['type']; ?> - <?php echo ucfirst($activity['status']); ?></p>
+                                <time datetime="<?php echo $activity['date']; ?>">
+                                    <?php echo format_date($activity['date']); ?>
+                                </time>
+                            </div>
                         </div>
-                        <div class="timeline-content">
-                            <h4><?php echo $activity['user_name']; ?></h4>
-                            <p><?php echo $activity['type']; ?> - <?php echo ucfirst($activity['status']); ?></p>
-                            <time datetime="<?php echo $activity['date']; ?>">
-                                <?php echo format_date($activity['date']); ?>
-                            </time>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        <?php else: ?>
-            <div class="empty-state">
-                <div class="empty-icon">
-                    <i class="fas fa-inbox"></i>
+                    <?php endforeach; ?>
                 </div>
-                <p>Belum ada aktivitas terbaru</p>
-            </div>
-        <?php endif; ?>
+            <?php else: ?>
+                <div class="no-data">
+                    <i class="fas fa-inbox"></i>
+                    <p>Belum ada aktivitas terbaru</p>
+                </div>
+            <?php endif; ?>
+        </div>
     </div>
     
-    <div class="dashboard-section">
-        <div class="section-header">
+    <div class="admin-card">
+        <div class="card-header">
             <h3><i class="fas fa-tasks"></i> Tugas Cepat</h3>
         </div>
         
-        <div class="quick-actions">
-            <a href="<?php echo BASE_URL; ?>/admin/manage_employees.php" class="quick-action-card">
-                <div class="action-icon"><i class="fas fa-user-plus"></i></div>
-                <h4>Tambah Karyawan</h4>
-            </a>
-            
-            <a href="<?php echo BASE_URL; ?>/admin/verify_workhours.php" class="quick-action-card">
-                <div class="action-icon"><i class="fas fa-clipboard-check"></i></div>
-                <h4>Verifikasi Jam Kerja</h4>
-            </a>
-            
-            <a href="<?php echo BASE_URL; ?>/admin/process_payroll.php" class="quick-action-card">
-                <div class="action-icon"><i class="fas fa-file-invoice-dollar"></i></div>
-                <h4>Proses Gaji</h4>
-            </a>
+        <div class="card-body">
+            <div class="quick-actions">
+                <a href="manage_employees.php" class="quick-action-card">
+                    <div class="action-icon"><i class="fas fa-user-plus"></i></div>
+                    <h4>Tambah Karyawan</h4>
+                </a>
+                
+                <a href="verify_data.php" class="quick-action-card">
+                    <div class="action-icon"><i class="fas fa-clipboard-check"></i></div>
+                    <h4>Verifikasi Data</h4>
+                </a>
+                
+                <a href="process_payroll.php" class="quick-action-card">
+                    <div class="action-icon"><i class="fas fa-file-invoice-dollar"></i></div>
+                    <h4>Proses Gaji</h4>
+                </a>
+            </div>
         </div>
     </div>
 </div>
 
 <style>
-.dashboard-container {
-    padding: 24px;
-    max-width: 1280px;
-    margin: 0 auto;
-}
-
-.dashboard-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid #f0f0f0;
-}
-
-.dashboard-header h2 {
-    font-weight: 500;
-    color: #333;
-    margin: 0;
-}
-
+/* Dashboard specific styles that are not in admin.css */
 .date-display {
     background-color: #f5f7fa;
     padding: 8px 16px;
@@ -178,15 +163,15 @@ $recent_activities = $stmt->fetchAll();
 }
 
 .employee-card {
-    border-left-color: #4f86f7;
+    border-left-color: var(--primary-color);
 }
 
 .pending-card {
-    border-left-color: #f7a14f;
+    border-left-color: var(--warning-color);
 }
 
 .payroll-card {
-    border-left-color: #4fc95f;
+    border-left-color: var(--success-color);
 }
 
 .stat-icon {
@@ -202,18 +187,18 @@ $recent_activities = $stmt->fetchAll();
 }
 
 .employee-card .stat-icon {
-    background-color: rgba(79, 134, 247, 0.1);
-    color: #4f86f7;
+    background-color: rgba(63, 81, 181, 0.1);
+    color: var(--primary-color);
 }
 
 .pending-card .stat-icon {
-    background-color: rgba(247, 161, 79, 0.1);
-    color: #f7a14f;
+    background-color: rgba(255, 193, 7, 0.1);
+    color: var(--warning-color);
 }
 
 .payroll-card .stat-icon {
-    background-color: rgba(79, 201, 95, 0.1);
-    color: #4fc95f;
+    background-color: rgba(40, 167, 69, 0.1);
+    color: var(--success-color);
 }
 
 .stat-icon i {
@@ -244,180 +229,111 @@ $recent_activities = $stmt->fetchAll();
     margin: 4px 0 0 0;
 }
 
-.dashboard-section {
-    background-color: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-    margin-bottom: 32px;
-    overflow: hidden;
-}
-
-.section-header {
-    padding: 16px 24px;
-    border-bottom: 1px solid #f0f0f0;
-}
-
-.section-header h3 {
-    margin: 0;
-    font-weight: 500;
-    font-size: 18px;
-    color: #333;
-}
-
-.section-header h3 i {
-    margin-right: 8px;
-    color: #666;
-}
-
+/* Timeline styles */
 .activity-timeline {
-    padding: 24px;
+    padding: 20px 0;
 }
 
 .timeline-item {
     display: flex;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
     position: relative;
 }
 
-.timeline-item:last-child {
-    margin-bottom: 0;
-}
-
-.timeline-item:before {
-    content: '';
-    position: absolute;
-    left: 20px;
-    top: 40px;
-    bottom: -15px;
-    width: 2px;
-    background-color: #f0f0f0;
-    z-index: 1;
-}
-
-.timeline-item:last-child:before {
-    display: none;
-}
-
 .timeline-icon {
-    height: 40px;
     width: 40px;
+    height: 40px;
+    background-color: #f5f7fa;
     border-radius: 50%;
-    background-color: #eee;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 16px;
-    z-index: 2;
+    margin-right: 15px;
+    color: #888;
 }
 
 .timeline-icon.pending {
-    background-color: rgba(247, 161, 79, 0.1);
-    color: #f7a14f;
+    background-color: rgba(255, 193, 7, 0.1);
+    color: var(--warning-color);
 }
 
 .timeline-icon.approved {
-    background-color: rgba(79, 201, 95, 0.1);
-    color: #4fc95f;
+    background-color: rgba(40, 167, 69, 0.1);
+    color: var(--success-color);
 }
 
 .timeline-icon.rejected {
-    background-color: rgba(239, 83, 80, 0.1);
-    color: #ef5350;
-}
-
-.timeline-icon.corrected {
-    background-color: rgba(79, 134, 247, 0.1);
-    color: #4f86f7;
+    background-color: rgba(220, 53, 69, 0.1);
+    color: var(--danger-color);
 }
 
 .timeline-content {
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 8px;
     flex: 1;
-    padding-top: 4px;
 }
 
 .timeline-content h4 {
-    margin: 0 0 8px 0;
+    margin: 0 0 5px;
     font-size: 16px;
     font-weight: 500;
 }
 
 .timeline-content p {
-    margin: 0 0 4px 0;
-    font-size: 14px;
+    margin: 0 0 5px;
     color: #666;
 }
 
 .timeline-content time {
-    font-size: 13px;
+    font-size: 12px;
     color: #888;
 }
 
-.empty-state {
-    padding: 40px;
-    text-align: center;
-    color: #888;
-}
-
-.empty-icon {
-    font-size: 48px;
-    margin-bottom: 16px;
-    color: #ddd;
-}
-
+/* Quick actions */
 .quick-actions {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 16px;
-    padding: 24px;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
 }
 
 .quick-action-card {
-    background-color: #f5f7fa;
-    padding: 20px;
+    background-color: #f9f9f9;
     border-radius: 8px;
+    padding: 20px;
     text-align: center;
     text-decoration: none;
-    color: #333;
-    transition: all 0.3s;
+    color: var(--text-color);
+    transition: transform 0.3s, box-shadow 0.3s;
 }
 
 .quick-action-card:hover {
-    background-color: #eef2f8;
-    transform: translateY(-3px);
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+    background-color: #fff;
 }
 
 .action-icon {
-    background-color: white;
-    width: 60px;
-    height: 60px;
+    background-color: rgba(63, 81, 181, 0.1);
+    color: var(--primary-color);
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
-    margin: 0 auto 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
-    color: #1976d2;
+    margin: 0 auto 15px;
+}
+
+.action-icon i {
+    font-size: 20px;
 }
 
 .quick-action-card h4 {
     margin: 0;
-    font-weight: 500;
     font-size: 16px;
-}
-
-@media (max-width: 768px) {
-    .stats-cards {
-        grid-template-columns: 1fr;
-    }
-    
-    .dashboard-header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    
-    .date-display {
-        margin-top: 8px;
-    }
+    font-weight: 500;
 }
 </style>
 

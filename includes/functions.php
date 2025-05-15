@@ -197,7 +197,7 @@ function display_alert()
         $type = $_SESSION['alert_type'];
         $message = $_SESSION['alert_message'];
 
-        $html = "<div class=\"alert-{$type}\">{$message}</div>";
+        $html = "<div class=\"admin-alert admin-alert-{$type}\">{$message}</div>";
 
         // Clear the alert
         unset($_SESSION['alert_type']);
@@ -256,6 +256,117 @@ function get_month_name($month_number)
 {
     $dateObj = DateTime::createFromFormat('!m', $month_number);
     return $dateObj->format('F');
+}
+
+/**
+ * Calculate total allowances from payroll record
+ * 
+ * @param array $payroll Payroll record
+ * @return float Total allowance amount
+ */
+function calculate_total_allowance($payroll)
+{
+    return floatval($payroll['transport_allowance']) +
+           floatval($payroll['meal_allowance']) +
+           floatval($payroll['health_allowance']) +
+           floatval($payroll['position_allowance']) +
+           floatval($payroll['attendance_allowance']) +
+           floatval($payroll['family_allowance']) +
+           floatval($payroll['communication_allowance']) +
+           floatval($payroll['education_allowance']);
+}
+
+/**
+ * Get overtime records for an employee
+ * 
+ * @param int $employee_id Employee ID
+ * @param string|null $status Filter by status (optional)
+ * @return array Array of overtime records
+ */
+function get_employee_overtime($employee_id, $status = null)
+{
+    global $conn;
+
+    if ($status) {
+        $stmt = $conn->prepare("SELECT * FROM overtime WHERE employee_id = ? AND status = ? ORDER BY date DESC");
+        $stmt->execute([$employee_id, $status]);
+    } else {
+        $stmt = $conn->prepare("SELECT * FROM overtime WHERE employee_id = ? ORDER BY date DESC");
+        $stmt->execute([$employee_id]);
+    }
+
+    return $stmt->fetchAll();
+}
+
+/**
+ * Calculate overtime hours
+ * 
+ * @param string $start_time Start time (format: HH:MM:SS)
+ * @param string $end_time End time (format: HH:MM:SS)
+ * @return float Overtime hours
+ */
+function calculate_overtime_hours($start_time, $end_time)
+{
+    $start = strtotime($start_time);
+    $end = strtotime($end_time);
+
+    // Handle overnight shifts
+    if ($end < $start) {
+        $end += 86400; // Add 24 hours (in seconds)
+    }
+
+    $diff_seconds = $end - $start;
+    $hours = $diff_seconds / 3600; // Convert to hours
+
+    return round($hours, 2);
+}
+
+/**
+ * Get pending overtime records for a manager
+ * 
+ * @param int $manager_id Manager ID
+ * @return array Pending overtime records
+ */
+function get_pending_overtime($manager_id)
+{
+    global $conn;
+    
+    $stmt = $conn->prepare("
+        SELECT o.*, u.name as employee_name, u.position
+        FROM overtime o
+        JOIN users u ON o.employee_id = u.id
+        WHERE u.manager_id = ? AND o.status = 'pending'
+        ORDER BY o.date DESC
+    ");
+    $stmt->execute([$manager_id]);
+    
+    return $stmt->fetchAll();
+}
+
+/**
+ * Get total overtime hours for an employee in a specific month
+ * 
+ * @param int $employee_id Employee ID
+ * @param int $month Month number (1-12)
+ * @param int $year Year
+ * @return float Total approved overtime hours
+ */
+function get_monthly_overtime_hours($employee_id, $month, $year)
+{
+    global $conn;
+    
+    $stmt = $conn->prepare("
+        SELECT SUM(hours) as total_hours
+        FROM overtime
+        WHERE employee_id = ?
+        AND MONTH(date) = ?
+        AND YEAR(date) = ?
+        AND status = 'approved'
+    ");
+    $stmt->execute([$employee_id, $month, $year]);
+    
+    $result = $stmt->fetch();
+    return floatval($result['total_hours'] ?? 0);
 }
 
 /**

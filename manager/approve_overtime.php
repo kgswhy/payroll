@@ -2,47 +2,36 @@
 require_once '../auth/check_session.php';
 require_once '../includes/header.php';
 
-// Get manager details
-$manager_id = $_SESSION['user_id'];
+// Check if user is a manager
+if($_SESSION['user_role'] !== 'manager') {
+    redirect('../index.php');
+}
 
-// Process overtime approval
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['approve_overtime'])) {
-        $work_hour_id = intval($_POST['id']);
-        $notes = sanitize_input($_POST['notes']);
-
+// Handle form submission for approval or rejection
+if($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $overtime_id = sanitize_input($_POST['overtime_id']);
+    $action = sanitize_input($_POST['action']);
+    $manager_id = $_SESSION['user_id'];
+    
+    // Validate action
+    if($action !== 'approve' && $action !== 'reject') {
+        set_alert('danger', 'Invalid action');
+    } else {
         try {
+            $status = ($action === 'approve') ? 'approved' : 'rejected';
+            
             $stmt = $conn->prepare("
-                UPDATE work_hours 
-                SET status = 'approved', notes = CONCAT(IFNULL(notes, ''), '\n[Overtime Approved: ', ?, ']'), reviewed_by = ? 
+                UPDATE overtime 
+                SET status = ?, reviewed_by = ?, reviewed_at = NOW() 
                 WHERE id = ?
             ");
-            $result = $stmt->execute([$notes, $manager_id, $work_hour_id]);
-
-            if ($result) {
-                set_alert('success', 'Overtime approved successfully');
+            $result = $stmt->execute([$status, $manager_id, $overtime_id]);
+            
+            if($result) {
+                $message = ($status === 'approved') ? 'Overtime approved successfully' : 'Overtime rejected successfully';
+                set_alert('success', $message);
             } else {
-                set_alert('danger', 'Failed to approve overtime');
-            }
-        } catch (PDOException $e) {
-            set_alert('danger', 'Error: ' . $e->getMessage());
-        }
-    } elseif (isset($_POST['reject_overtime'])) {
-        $work_hour_id = intval($_POST['id']);
-        $notes = sanitize_input($_POST['notes']);
-
-        try {
-            $stmt = $conn->prepare("
-                UPDATE work_hours 
-                SET status = 'rejected', notes = CONCAT(IFNULL(notes, ''), '\n[Overtime Rejected: ', ?, ']'), reviewed_by = ? 
-                WHERE id = ?
-            ");
-            $result = $stmt->execute([$notes, $manager_id, $work_hour_id]);
-
-            if ($result) {
-                set_alert('success', 'Overtime rejected');
-            } else {
-                set_alert('danger', 'Failed to reject overtime');
+                set_alert('danger', 'Failed to update overtime status');
             }
         } catch (PDOException $e) {
             set_alert('danger', 'Error: ' . $e->getMessage());
@@ -50,127 +39,182 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Get potential overtime entries (more than 8 hours in a day)
-$stmt = $conn->prepare("
-    SELECT wh.*, u.name as employee_name,
-    TIME_TO_SEC(TIMEDIFF(wh.time_out, wh.time_in)) / 3600 as hours_worked
-    FROM work_hours wh 
-    JOIN users u ON wh.employee_id = u.id 
-    WHERE u.manager_id = ? 
-    AND TIME_TO_SEC(TIMEDIFF(wh.time_out, wh.time_in)) / 3600 > 8
-    AND wh.status = 'pending'
-    ORDER BY wh.date DESC
-");
-$stmt->execute([$manager_id]);
-$overtime_entries = $stmt->fetchAll();
+// Get pending overtime requests for this manager
+$manager_id = $_SESSION['user_id'];
+$overtime_requests = get_pending_overtime($manager_id);
 ?>
 
-<div class="container">
-    <h2>Approve Overtime</h2>
+<!-- Include admin CSS -->
+<link rel="stylesheet" href="../assets/css/admin.css">
+<!-- Include admin utilities -->
+<script src="../assets/js/admin-utils.js"></script>
 
-    <?php if (count($overtime_entries) > 0): ?>
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Employee</th>
-                    <th>Date</th>
-                    <th>Time In</th>
-                    <th>Time Out</th>
-                    <th>Total Hours</th>
-                    <th>Overtime Hours</th>
-                    <th>Notes</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($overtime_entries as $oe): ?>
-                    <?php
-                    $total_hours = $oe['hours_worked'];
-                    $overtime_hours = $total_hours - 8; // Hours above standard 8-hour day
-                    ?>
-                    <tr>
-                        <td><?php echo $oe['employee_name']; ?></td>
-                        <td><?php echo format_date($oe['date']); ?></td>
-                        <td><?php echo date('h:i A', strtotime($oe['time_in'])); ?></td>
-                        <td><?php echo date('h:i A', strtotime($oe['time_out'])); ?></td>
-                        <td><?php echo round($total_hours, 2); ?> hrs</td>
-                        <td><strong><?php echo round($overtime_hours, 2); ?> hrs</strong></td>
-                        <td><?php echo $oe['notes']; ?></td>
-                        <td>
-                            <button type="button" onclick="showApprovalForm(<?php echo $oe['id']; ?>)">Approve</button>
-                            <button type="button" onclick="showRejectionForm(<?php echo $oe['id']; ?>)">Reject</button>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-
-        <!-- Approval Form (Hidden by default) -->
-        <div id="overtime-approval-form" style="display: none;" class="modal-form">
-            <h3>Approve Overtime</h3>
-            <form method="post" action="">
-                <input type="hidden" name="id" id="approve_id">
-                <div class="form-group">
-                    <label for="approve_notes">Comments (optional):</label>
-                    <textarea name="notes" id="approve_notes" rows="3"></textarea>
-                </div>
-                <button type="submit" name="approve_overtime">Confirm Approval</button>
-                <button type="button" onclick="hideApprovalForm()">Cancel</button>
-            </form>
+<div class="admin-container">
+    <div class="page-header">
+        <h2><i class="fas fa-business-time"></i> Approve Overtime</h2>
+    </div>
+    
+    <?php echo display_alert(); ?>
+    
+    <div class="admin-card">
+        <div class="card-header">
+            <h3><i class="fas fa-tasks"></i> Pending Overtime Requests</h3>
         </div>
-
-        <!-- Rejection Form (Hidden by default) -->
-        <div id="overtime-rejection-form" style="display: none;" class="modal-form">
-            <h3>Reject Overtime</h3>
-            <form method="post" action="">
-                <input type="hidden" name="id" id="reject_id">
-                <div class="form-group">
-                    <label for="reject_notes">Reason for Rejection (required):</label>
-                    <textarea name="notes" id="reject_notes" rows="3" required></textarea>
+        <div class="card-body">
+            <?php if(count($overtime_requests) > 0): ?>
+                <div class="table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Position</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Hours</th>
+                                <th>Reason</th>
+                                <th>Submitted</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach($overtime_requests as $request): ?>
+                            <tr>
+                                <td><?php echo htmlspecialchars($request['employee_name']); ?></td>
+                                <td><?php echo htmlspecialchars($request['position']); ?></td>
+                                <td><?php echo format_date($request['date']); ?></td>
+                                <td>
+                                    <?php 
+                                        echo date('h:i A', strtotime($request['start_time'])) . ' - ' . 
+                                             date('h:i A', strtotime($request['end_time'])); 
+                                    ?>
+                                </td>
+                                <td><?php echo $request['hours']; ?> hrs</td>
+                                <td><?php echo nl2br(htmlspecialchars($request['reason'])); ?></td>
+                                <td><?php echo date('M j, Y', strtotime($request['created_at'])); ?></td>
+                                <td class="actions">
+                                    <form method="post" class="approve-form">
+                                        <input type="hidden" name="overtime_id" value="<?php echo $request['id']; ?>">
+                                        <input type="hidden" name="action" value="approve">
+                                        <button type="submit" class="admin-btn admin-btn-success admin-btn-sm" onclick="return confirm('Are you sure you want to approve this overtime request?')">
+                                            <i class="fas fa-check"></i> Approve
+                                        </button>
+                                    </form>
+                                    <form method="post" class="reject-form">
+                                        <input type="hidden" name="overtime_id" value="<?php echo $request['id']; ?>">
+                                        <input type="hidden" name="action" value="reject">
+                                        <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm" onclick="return confirm('Are you sure you want to reject this overtime request?')">
+                                            <i class="fas fa-times"></i> Reject
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
                 </div>
-                <button type="submit" name="reject_overtime">Confirm Rejection</button>
-                <button type="button" onclick="hideRejectionForm()">Cancel</button>
-            </form>
+            <?php else: ?>
+                <div class="admin-alert admin-alert-info">
+                    <i class="fas fa-info-circle"></i> No pending overtime requests.
+                </div>
+            <?php endif; ?>
         </div>
-    <?php else: ?>
-        <p>No pending overtime entries to review.</p>
-    <?php endif; ?>
+    </div>
+    
+    <!-- View all approved and rejected overtime -->
+    <div class="admin-card mt-4">
+        <div class="card-header">
+            <h3><i class="fas fa-history"></i> Recent Overtime History</h3>
+        </div>
+        <div class="card-body">
+            <div class="filter-controls">
+                <select id="status-filter" class="filter-select">
+                    <option value="all">All Statuses</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                </select>
+                <button id="filter-btn" class="admin-btn admin-btn-primary ml-2">Filter</button>
+            </div>
+            
+            <div id="overtime-history">
+                <!-- AJAX loaded content will appear here -->
+                <div class="text-center py-3">
+                    <p>Select a filter and click "Filter" to view overtime history.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<style>
-    .modal-form {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background-color: white;
-        padding: 20px;
-        border-radius: 5px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-        z-index: 1000;
-        width: 80%;
-        max-width: 500px;
-    }
-</style>
-
 <script>
-    function showApprovalForm(id) {
-        document.getElementById('approve_id').value = id;
-        document.getElementById('overtime-approval-form').style.display = 'block';
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle filter button click
+    document.getElementById('filter-btn').addEventListener('click', function() {
+        const status = document.getElementById('status-filter').value;
+        loadOvertimeHistory(status);
+    });
+    
+    function loadOvertimeHistory(status) {
+        const historyContainer = document.getElementById('overtime-history');
+        showLoading(historyContainer);
+        
+        // Call the API to get overtime history
+        fetchWithErrorHandling(`../api/get_overtime_history.php?status=${status}`)
+            .then(data => {
+                if (data.count === 0) {
+                    showEmptyState(historyContainer, 'No overtime records found with the selected filter.', 'clock');
+                    return;
+                }
+                
+                // Create table with overtime history
+                let html = `
+                    <div class="table-responsive">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Employee</th>
+                                    <th>Position</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Hours</th>
+                                    <th>Status</th>
+                                    <th>Reviewed By</th>
+                                    <th>Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                data.data.forEach(record => {
+                    html += `
+                        <tr>
+                            <td>${record.employee.name}</td>
+                            <td>${record.employee.position}</td>
+                            <td>${record.date}</td>
+                            <td>${record.time}</td>
+                            <td>${record.hours} hrs</td>
+                            <td><span class="status-badge ${record.status}">${record.status.charAt(0).toUpperCase() + record.status.slice(1)}</span></td>
+                            <td>${record.reviewed_by || '-'}</td>
+                            <td>${record.reason}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                historyContainer.innerHTML = html;
+            })
+            .catch(error => {
+                showError(historyContainer, 'Failed to load overtime history: ' + error.message);
+            });
     }
-
-    function hideApprovalForm() {
-        document.getElementById('overtime-approval-form').style.display = 'none';
-    }
-
-    function showRejectionForm(id) {
-        document.getElementById('reject_id').value = id;
-        document.getElementById('overtime-rejection-form').style.display = 'block';
-    }
-
-    function hideRejectionForm() {
-        document.getElementById('overtime-rejection-form').style.display = 'none';
-    }
+    
+    // Load all overtime history on page load
+    loadOvertimeHistory('all');
+});
 </script>
 
 <?php require_once '../includes/footer.php'; ?>

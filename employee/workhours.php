@@ -39,77 +39,119 @@ $employee_id = $_SESSION['user_id'];
 $work_hours = get_work_hours($employee_id);
 ?>
 
-<div class="container">
-    <h2>My Work Hours</h2>
-    
-    <div class="work-hours-form">
-        <h3>Log Work Hours</h3>
-        <form method="post" action="">
-            <div class="form-group">
-                <label for="date">Date:</label>
-                <input type="date" name="date" id="date" required max="<?php echo date('Y-m-d'); ?>">
-            </div>
-            <div class="form-group">
-                <label for="time_in">Time In:</label>
-                <input type="time" name="time_in" id="time_in" required>
-            </div>
-            <div class="form-group">
-                <label for="time_out">Time Out:</label>
-                <input type="time" name="time_out" id="time_out" required>
-            </div>
-            <div class="form-group">
-                <div id="total-hours"></div>
-            </div>
-            <div class="form-group">
-                <label for="notes">Notes (optional):</label>
-                <textarea name="notes" id="notes" rows="3"></textarea>
-            </div>
-            <button type="submit" name="submit_hours">Submit Hours</button>
-        </form>
+<!-- Include the employee workhours CSS -->
+<link rel="stylesheet" href="../assets/css/employee-workhours.css">
+
+<div class="workhours-container">
+    <div class="page-header">
+        <h2><i class="fas fa-clock"></i> My Work Hours</h2>
     </div>
     
-    <div class="work-hours-history">
-        <h3>My Work History</h3>
-        <?php if(count($work_hours) > 0): ?>
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Time In</th>
-                        <th>Time Out</th>
-                        <th>Hours</th>
-                        <th>Status</th>
-                        <th>Notes</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach($work_hours as $wh): ?>
-                    <tr>
-                        <td><?php echo format_date($wh['date']); ?></td>
-                        <td><?php echo date('h:i A', strtotime($wh['time_in'])); ?></td>
-                        <td><?php echo date('h:i A', strtotime($wh['time_out'])); ?></td>
-                        <td><?php echo calculate_hours($wh['time_in'], $wh['time_out']); ?> hrs</td>
-                        <td>
-                            <?php 
-                                $status_class = '';
-                                switch($wh['status']) {
-                                    case 'approved': $status_class = 'text-success'; break;
-                                    case 'rejected': $status_class = 'text-danger'; break;
-                                    case 'corrected': $status_class = 'text-warning'; break;
-                                    default: $status_class = 'text-muted';
-                                }
-                                echo '<span class="' . $status_class . '">' . ucfirst($wh['status']) . '</span>';
-                            ?>
-                        </td>
-                        <td><?php echo $wh['notes']; ?></td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        <?php else: ?>
-            <p>No work hours recorded yet.</p>
-        <?php endif; ?>
+    <div class="workhours-card">
+        <div class="card-header">
+            <h3><i class="fas fa-plus-circle"></i> Log Work Hours</h3>
+        </div>
+        <div class="card-body">
+            <form method="post" action="" class="form-container">
+                <div class="form-group">
+                    <label for="date" class="form-label">Date:</label>
+                    <input type="date" name="date" id="date" class="form-input" required max="<?php echo date('Y-m-d'); ?>">
+                </div>
+                <div class="form-group">
+                    <label for="time_in" class="form-label">Time In:</label>
+                    <input type="time" name="time_in" id="time_in" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="time_out" class="form-label">Time Out:</label>
+                    <input type="time" name="time_out" id="time_out" class="form-input" required>
+                    <div id="total-hours" class="form-note"></div>
+                </div>
+                <div class="form-group">
+                    <label for="notes" class="form-label">Notes (optional):</label>
+                    <textarea name="notes" id="notes" rows="3" class="form-input"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" name="submit_hours" class="btn btn-primary"><i class="fas fa-save"></i> Submit Hours</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="workhours-card">
+        <div class="card-header">
+            <h3><i class="fas fa-history"></i> My Work History</h3>
+        </div>
+        <div class="card-body">
+            <?php if(count($work_hours) > 0): ?>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Time In</th>
+                                <th>Time Out</th>
+                                <th>Hours</th>
+                                <th>Status</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach($work_hours as $wh): ?>
+                            <tr>
+                                <td><?php echo format_date($wh['date']); ?></td>
+                                <td><?php echo date('h:i A', strtotime($wh['time_in'])); ?></td>
+                                <td><?php echo date('h:i A', strtotime($wh['time_out'])); ?></td>
+                                <td><?php echo calculate_hours($wh['time_in'], $wh['time_out']); ?> hrs</td>
+                                <td>
+                                    <span class="status-badge <?php echo $wh['status']; ?>">
+                                        <?php echo ucfirst($wh['status']); ?>
+                                    </span>
+                                </td>
+                                <td><?php echo $wh['notes']; ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php else: ?>
+                <div class="no-data">
+                    <i class="fas fa-inbox"></i>
+                    <p>No work hours recorded yet.</p>
+                </div>
+            <?php endif; ?>
+        </div>
     </div>
 </div>
+
+<!-- Add JavaScript for calculating total hours -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const timeInInput = document.getElementById('time_in');
+    const timeOutInput = document.getElementById('time_out');
+    const totalHoursDiv = document.getElementById('total-hours');
+    
+    function calculateTotalHours() {
+        if (timeInInput.value && timeOutInput.value) {
+            const timeIn = new Date(`2000-01-01T${timeInInput.value}`);
+            let timeOut = new Date(`2000-01-01T${timeOutInput.value}`);
+            
+            // Handle overnight shifts
+            if (timeOut < timeIn) {
+                timeOut = new Date(`2000-01-02T${timeOutInput.value}`);
+            }
+            
+            const diffMs = timeOut - timeIn;
+            const diffHrs = diffMs / (1000 * 60 * 60);
+            
+            totalHoursDiv.textContent = `Total: ${diffHrs.toFixed(2)} hours`;
+        } else {
+            totalHoursDiv.textContent = '';
+        }
+    }
+    
+    timeInInput.addEventListener('change', calculateTotalHours);
+    timeOutInput.addEventListener('change', calculateTotalHours);
+});
+</script>
 
 <?php require_once '../includes/footer.php'; ?> 

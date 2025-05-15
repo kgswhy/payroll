@@ -36,112 +36,145 @@ $stmt->execute([$employee_id]);
 $latest_payroll = $stmt->fetch();
 ?>
 
-<div class="container">
-    <h2>Employee Dashboard</h2>
-    
-    <div class="dashboard-cards">
-        <div class="card">
-            <h3>Monthly Hours</h3>
-            <p class="big-number"><?php echo $monthly_hours; ?></p>
-            <p>Approved hours this month</p>
-        </div>
-        <div class="card">
-            <h3>Base Salary</h3>
-            <p class="big-number"><?php echo format_money($employee['base_salary']); ?></p>
-        </div>
-        <div class="card">
-            <h3>Last Salary</h3>
-            <p class="big-number">
-                <?php echo $latest_payroll ? format_money($latest_payroll['net_salary']) : 'N/A'; ?>
-            </p>
-            <p>
-                <?php 
-                    if($latest_payroll) {
-                        echo get_month_name($latest_payroll['month']) . ' ' . $latest_payroll['year'];
-                    } 
-                ?>
-            </p>
-        </div>
+<!-- Include the employee dashboard CSS -->
+<link rel="stylesheet" href="../assets/css/employee-dashboard.css">
+
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h2><i class="fas fa-tachometer-alt"></i> Employee Dashboard</h2>
     </div>
     
-    <div class="recent-entries">
-        <h3>Recent Time Entries</h3>
-        <?php if(count($recent_hours) > 0): ?>
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Time In</th>
-                        <th>Time Out</th>
-                        <th>Hours</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach($recent_hours as $wh): ?>
-                    <tr>
-                        <td><?php echo format_date($wh['date']); ?></td>
-                        <td><?php echo date('h:i A', strtotime($wh['time_in'])); ?></td>
-                        <td><?php echo date('h:i A', strtotime($wh['time_out'])); ?></td>
-                        <td><?php echo calculate_hours($wh['time_in'], $wh['time_out']); ?> hrs</td>
-                        <td>
+    <div class="dashboard-grid">
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3><i class="fas fa-clock"></i> Monthly Hours</h3>
+            </div>
+            <div class="card-body">
+                <div class="status-card">
+                    <div class="status-icon info">
+                        <i class="fas fa-stopwatch"></i>
+                    </div>
+                    <div class="status-text">
+                        <h4><?php echo $monthly_hours; ?> hours</h4>
+                        <p>Approved hours this month</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3><i class="fas fa-money-bill-wave"></i> Base Salary</h3>
+            </div>
+            <div class="card-body">
+                <div class="status-card">
+                    <div class="status-icon success">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="status-text">
+                        <h4><?php echo format_money($employee['base_salary']); ?></h4>
+                        <p>Your current base salary</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3><i class="fas fa-wallet"></i> Last Salary</h3>
+            </div>
+            <div class="card-body">
+                <div class="status-card">
+                    <div class="status-icon warning">
+                        <i class="fas fa-hand-holding-usd"></i>
+                    </div>
+                    <div class="status-text">
+                        <h4><?php echo $latest_payroll ? format_money($latest_payroll['net_salary']) : 'N/A'; ?></h4>
+                        <p>
                             <?php 
-                                switch($wh['status']) {
-                                    case 'approved': echo '<span class="text-success">Approved</span>'; break;
-                                    case 'rejected': echo '<span class="text-danger">Rejected</span>'; break;
-                                    case 'corrected': echo '<span class="text-warning">Corrected</span>'; break;
-                                    default: echo '<span class="text-muted">Pending</span>';
+                                if($latest_payroll) {
+                                    echo get_month_name($latest_payroll['month']) . ' ' . $latest_payroll['year'];
+                                } else {
+                                    echo 'No payroll data yet';
                                 }
                             ?>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-            <p><a href="workhours.php">View all time entries</a></p>
-        <?php else: ?>
-            <p>No recent time entries found. <a href="workhours.php">Add your first time entry</a></p>
-        <?php endif; ?>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     
-    <div class="quick-actions">
-        <h3>Quick Actions</h3>
-        <div class="action-buttons">
-            <a href="workhours.php" class="button">
-                <i class="fas fa-clock"></i> Log Work Hours
-            </a>
-            <a href="salary.php" class="button">
-                <i class="fas fa-money-bill"></i> View Salary
-            </a>
+    <div class="dashboard-card">
+        <div class="card-header">
+            <h3><i class="fas fa-history"></i> Recent Time Entries</h3>
+        </div>
+        <div class="card-body">
+            <?php if(count($recent_hours) > 0): ?>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Time In</th>
+                                <th>Time Out</th>
+                                <th>Hours</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach($recent_hours as $wh): ?>
+                            <tr>
+                                <td><?php echo format_date($wh['date']); ?></td>
+                                <td><?php echo date('h:i A', strtotime($wh['time_in'])); ?></td>
+                                <td><?php echo date('h:i A', strtotime($wh['time_out'])); ?></td>
+                                <td><?php echo calculate_hours($wh['time_in'], $wh['time_out']); ?> hrs</td>
+                                <td>
+                                    <span class="status-badge <?php echo $wh['status']; ?>">
+                                        <?php echo ucfirst($wh['status']); ?>
+                                    </span>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <p style="margin-top: 15px;"><a href="workhours.php">View all time entries</a></p>
+            <?php else: ?>
+                <div class="no-data">
+                    <i class="fas fa-inbox"></i>
+                    <p>No recent time entries found. <a href="workhours.php">Add your first time entry</a></p>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+    
+    <div class="dashboard-card">
+        <div class="card-header">
+            <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+        </div>
+        <div class="card-body">
+            <div class="quick-actions">
+                <a href="workhours.php" class="action-button">
+                    <i class="fas fa-clock"></i>
+                    <span>Log Work Hours</span>
+                </a>
+                <a href="salary.php" class="action-button">
+                    <i class="fas fa-money-bill"></i>
+                    <span>View Salary</span>
+                </a>
+                <a href="../profile.php" class="action-button">
+                    <i class="fas fa-user"></i>
+                    <span>My Profile</span>
+                </a>
+                <a href="../help.php" class="action-button">
+                    <i class="fas fa-question-circle"></i>
+                    <span>Help & Support</span>
+                </a>
+            </div>
         </div>
     </div>
 </div>
-
-<style>
-.action-buttons {
-    display: flex;
-    gap: 10px;
-    margin-top: 15px;
-}
-
-.button {
-    display: inline-block;
-    padding: 10px 15px;
-    background-color: #3498db;
-    color: white;
-    text-decoration: none;
-    border-radius: 4px;
-}
-
-.button:hover {
-    background-color: #2980b9;
-}
-
-.text-success { color: #4CAF50; }
-.text-danger { color: #e74c3c; }
-.text-warning { color: #f39c12; }
-.text-muted { color: #7f8c8d; }
-</style>
 
 <?php require_once '../includes/footer.php'; ?> 
  
